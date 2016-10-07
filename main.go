@@ -1,7 +1,6 @@
 package main
 
 import (
-	"bytes"
 	"encoding/json"
 	"fmt"
 	"io/ioutil"
@@ -14,6 +13,7 @@ import (
 	_ "github.com/jinzhu/gorm/dialects/sqlite"
 )
 
+// struct of the model of the db
 type Msg struct {
 	gorm.Model
 	Name    string
@@ -22,6 +22,7 @@ type Msg struct {
 	Channel string
 }
 
+// This is a struct for us to store the message that is posted into
 type Message struct {
 	Channel string `json:"channel"`
 	User    string `json:"user"`
@@ -41,17 +42,18 @@ func post_message(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}
 
-	var prettyJSON bytes.Buffer
-	err = json.Indent(&prettyJSON, body, "", "\t")
-	if err != nil {
-		fmt.Println("Ooops! somethings gone wrong")
-		os.Exit(1)
-	}
-	fmt.Println("Body: ")
-	fmt.Println(string(prettyJSON.Bytes()))
-
+	/*
+		var prettyJSON bytes.Buffer
+		err = json.Indent(&prettyJSON, body, "", "\t")
+		if err != nil {
+			fmt.Println("Ooops! somethings gone wrong")
+			os.Exit(1)
+		}
+		fmt.Println("Body: ")
+		fmt.Println(string(prettyJSON.Bytes()))
+	*/
 	var message Message
-	err = json.Unmarshal(prettyJSON.Bytes(), &message)
+	err = json.Unmarshal(body, &message)
 
 	fmt.Println("Params: ")
 	// this deals with post params
