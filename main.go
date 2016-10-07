@@ -42,16 +42,6 @@ func post_message(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}
 
-	/*
-		var prettyJSON bytes.Buffer
-		err = json.Indent(&prettyJSON, body, "", "\t")
-		if err != nil {
-			fmt.Println("Ooops! somethings gone wrong")
-			os.Exit(1)
-		}
-		fmt.Println("Body: ")
-		fmt.Println(string(prettyJSON.Bytes()))
-	*/
 	var message Message
 	err = json.Unmarshal(body, &message)
 
