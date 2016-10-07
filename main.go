@@ -16,10 +16,9 @@ import (
 // struct of the model of the db
 type Msg struct {
 	gorm.Model
-	Name    string
-	Message string
-	User    string
 	Channel string
+	User    string
+	Content string
 }
 
 // This is a struct for us to store the message that is posted into
@@ -34,7 +33,7 @@ type Response struct {
 	Body []string
 }
 
-func postMessage(w http.ResponseWriter, r *http.Request) {
+func postMessage(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
 	// get the form data
 	r.ParseForm()
 	body, err := ioutil.ReadAll(r.Body)
@@ -56,6 +55,11 @@ func postMessage(w http.ResponseWriter, r *http.Request) {
 
 	// send a response echoing the values sent in - just for demonstration
 	response := Response{"Message", []string{message.Channel, message.User, message.Content}}
+
+	msg := Msg{Channel: message.Channel, User: message.User, Content: message.Content}
+	db.NewRecord(msg)
+	db.Create(&msg)
+
 	js, err := json.Marshal(response)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
@@ -98,7 +102,9 @@ func main() {
 	}
 	fmt.Println("Ctrl-C exit!")
 	http.HandleFunc("/", welcome)
-	http.HandleFunc("/message", postMessage)
+	http.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
+		postMessage(w, r, db)
+	})
 	err = http.ListenAndServe(":8666", nil)
 	if err != nil {
 		fmt.Println("ListenAndServe: ", err)
