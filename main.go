@@ -22,16 +22,19 @@ type Msg struct {
 	Channel string
 }
 
+type Message struct {
+	Channel string `json:"channel"`
+	User    string `json:"user"`
+	Content string `json:"Content"`
+}
+
 type Response struct {
 	Name string
 	Body []string
 }
 
-func message(w http.ResponseWriter, r *http.Request) {
+func post_message(w http.ResponseWriter, r *http.Request) {
 	r.ParseForm()
-	fmt.Println("path", r.URL.Path)
-	fmt.Println("scheme", r.URL.Scheme)
-	fmt.Println(r.Form["url_long"])
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
 		fmt.Println("Ooops! somethings gone wrong")
@@ -46,11 +49,25 @@ func message(w http.ResponseWriter, r *http.Request) {
 	}
 	fmt.Println("Body: ")
 	fmt.Println(string(prettyJSON.Bytes()))
+
+	var message Message
+	err = json.Unmarshal(prettyJSON.Bytes(), &message)
+
 	fmt.Println("Params: ")
+	// this deals with post params
 	for k, v := range r.Form {
 		fmt.Println("key:", k)
 		fmt.Println("val:", strings.Join(v, ""))
 	}
+
+	response := Response{"Message", []string{message.Channel, message.User, message.Content}}
+	js, err := json.Marshal(response)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
 }
 
 func welcome(w http.ResponseWriter, r *http.Request) {
@@ -86,7 +103,7 @@ func main() {
 	}
 	fmt.Println("Ctrl-C exit!")
 	http.HandleFunc("/", welcome)
-	http.HandleFunc("/message", message)
+	http.HandleFunc("/message", post_message)
 	err = http.ListenAndServe(":8666", nil)
 	if err != nil {
 		fmt.Println("ListenAndServe: ", err)
