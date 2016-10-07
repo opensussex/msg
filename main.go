@@ -34,7 +34,8 @@ type Response struct {
 	Body []string
 }
 
-func post_message(w http.ResponseWriter, r *http.Request) {
+func postMessage(w http.ResponseWriter, r *http.Request) {
+	// get the form data
 	r.ParseForm()
 	body, err := ioutil.ReadAll(r.Body)
 	if err != nil {
@@ -42,16 +43,18 @@ func post_message(w http.ResponseWriter, r *http.Request) {
 		os.Exit(1)
 	}
 
+	// change the json data in the body into a message struct
 	var message Message
 	err = json.Unmarshal(body, &message)
 
 	fmt.Println("Params: ")
-	// this deals with post params
+	// this deals with post params if we send any through - we're just printing them here
 	for k, v := range r.Form {
 		fmt.Println("key:", k)
 		fmt.Println("val:", strings.Join(v, ""))
 	}
 
+	// send a response echoing the values sent in - just for demonstration
 	response := Response{"Message", []string{message.Channel, message.User, message.Content}}
 	js, err := json.Marshal(response)
 	if err != nil {
@@ -95,7 +98,7 @@ func main() {
 	}
 	fmt.Println("Ctrl-C exit!")
 	http.HandleFunc("/", welcome)
-	http.HandleFunc("/message", post_message)
+	http.HandleFunc("/message", postMessage)
 	err = http.ListenAndServe(":8666", nil)
 	if err != nil {
 		fmt.Println("ListenAndServe: ", err)
