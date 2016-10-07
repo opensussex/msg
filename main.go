@@ -16,21 +16,33 @@ import (
 // struct of the model of the db
 type Msg struct {
 	gorm.Model
-	Channel string
-	User    string
-	Content string
+	Channel string `json:"channel"`
+	User    string `json:"user"`
+	Content string `json:"content"`
 }
 
 // This is a struct for us to store the message that is posted into
 type Message struct {
 	Channel string `json:"channel"`
 	User    string `json:"user"`
-	Content string `json:"Content"`
+	Content string `json:"content"`
 }
 
 type Response struct {
 	Name string
 	Body []string
+}
+
+func initDb() *gorm.DB {
+	db, err := gorm.Open("sqlite3", "msg.db")
+	if err != nil {
+		panic("failed to connect database")
+	}
+	return db
+}
+
+func migrateDB(db *gorm.DB) {
+	db.AutoMigrate(&Msg{})
 }
 
 func postMessage(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
@@ -81,6 +93,27 @@ func welcome(w http.ResponseWriter, r *http.Request) {
 	w.Write(js)
 }
 
+func getMessages(w http.ResponseWriter, r *http.Request, db *gorm.DB) {
+	r.ParseForm()
+	// set up an array od Msg
+	var msgs []Msg
+	// get the result
+	db.Where("channel = ?", r.Form["channel"]).Find(&msgs)
+	//cycle over the results
+	for _, msg := range msgs {
+		fmt.Println(msg)
+		//fmt.Println("val:", strings.Join(v, ""))
+	}
+	js, err := json.Marshal(msgs)
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return
+	}
+	// spit out the values in the channel
+	w.Header().Set("Content-Type", "application/json")
+	w.Write(js)
+}
+
 func main() {
 
 	db := initDb()
@@ -101,24 +134,16 @@ func main() {
 		}
 	}
 	fmt.Println("Ctrl-C exit!")
+
 	http.HandleFunc("/", welcome)
 	http.HandleFunc("/message", func(w http.ResponseWriter, r *http.Request) {
 		postMessage(w, r, db)
+	})
+	http.HandleFunc("/get", func(w http.ResponseWriter, r *http.Request) {
+		getMessages(w, r, db)
 	})
 	err = http.ListenAndServe(":8666", nil)
 	if err != nil {
 		fmt.Println("ListenAndServe: ", err)
 	}
-}
-
-func initDb() *gorm.DB {
-	db, err := gorm.Open("sqlite3", "msg.db")
-	if err != nil {
-		panic("failed to connect database")
-	}
-	return db
-}
-
-func migrateDB(db *gorm.DB) {
-	db.AutoMigrate(&Msg{})
 }
